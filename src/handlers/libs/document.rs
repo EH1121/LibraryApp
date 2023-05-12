@@ -1,8 +1,4 @@
-// ? TODO: Create bulk function
-// pub async fn convert_to_bulk(operation_type: BulkTypes, data: &Value) -> {
-
 use actix_web::HttpResponse;
-// }
 use reqwest::StatusCode;
 use serde_json::{Value, json};
 

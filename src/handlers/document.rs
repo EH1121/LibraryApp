@@ -2,16 +2,11 @@ use actix_web::{web::{self, Data}, HttpResponse};
 use reqwest::StatusCode;
 use serde_json::{json, Value};
 use crate::{actions::EClientTesting, handlers::{libs::{index_name_builder, search_body_builder}, errors::ErrorTypes}};
-use super::libs::{check_server_up_exists_app_index, document_search};
+use super::{libs::{check_server_up_exists_app_index, document_search}, structs::document_struct::BookInput};
 use super::structs::{document_struct::{DocumentSearchQuery, RequiredDocumentID, ReturnFields, BulkFailures}, index_struct::RequiredIndex};
+use nanoid::nanoid;
 
-/// Document interfaces with index that is stored within the application id
-/// Inserting a document with a new field syncs the fields with all other shards
-/// 
-/// All operations requires app_id and the index name
-/// 
-
-pub async fn create_bulk_documents(app_index: web::Path<RequiredIndex>, data: web::Json<Vec<Value>>, client: Data::<EClientTesting>) -> HttpResponse {
+pub async fn create_bulk_documents(app_index: web::Path<RequiredIndex>, data: web::Json<Vec<BookInput>>, client: Data::<EClientTesting>) -> HttpResponse {
 
     let idx = app_index.index.clone().trim().to_ascii_lowercase();
 
@@ -21,8 +16,16 @@ pub async fn create_bulk_documents(app_index: web::Path<RequiredIndex>, data: we
     }
 
     let name = index_name_builder(&app_index.app_id, &idx);
+    
+    let mut converted_data: Vec<Value> = vec![];
+    let mut ids: Vec<String> = vec![];
 
-    let resp = client.bulk_index_documents(&name, &data).await.unwrap();
+    for i in data.iter(){
+        ids.push(nanoid!(32));
+        converted_data.push(serde_json::to_value(i).unwrap());
+    };
+
+    let resp = client.bulk_create_documents(&name, &converted_data, &ids).await.unwrap();
 
     let status = resp.status_code();
     let json: Value = resp.json::<Value>().await.unwrap();
@@ -50,9 +53,6 @@ pub async fn create_bulk_documents(app_index: web::Path<RequiredIndex>, data: we
 }
 
 pub async fn get_document(data: web::Path<RequiredDocumentID>, query: web::Path<ReturnFields>, client: Data::<EClientTesting>) -> HttpResponse {  
-    // if !is_server_up(&client).await { return HttpResponse::ServiceUnavailable().json(json!({"error": ErrorTypes::ServerDown.to_string()})) }
-    // App id, index name, and document id
-    // This will retrieve the shard number appended on the id
 
     let idx = data.index.trim().to_ascii_lowercase();
 
@@ -87,14 +87,12 @@ pub async fn post_search(app_index: web::Path<RequiredIndex>, data: web::Json<Do
 
     let total_time_taken = std::time::Instant::now();
 
-
     let idx = app_index.index.trim().to_ascii_lowercase();
     match check_server_up_exists_app_index(&app_index.app_id, &idx, &client).await{
         Ok(_) => (),
         Err((status, err)) => return HttpResponse::build(status).json(json!({"error": err.to_string()}))
     };
     
-    // TODO: Default search_in into a type of searchableAttributes which defaults its search to all fields with searchableAttributes when nothing is supplied 
     let fields_to_search = data.search_in.to_owned().map(|val| val.split(',').map(|x| x.trim().to_string()).collect());
 
     let term = if data.search_term.is_some() && data.wildcards.unwrap_or(false){
@@ -122,7 +120,6 @@ pub async fn post_search(app_index: web::Path<RequiredIndex>, data: web::Json<Do
     }
 }
 
-/// A Get method for search, also returns a list of documents from index if no query is given
 pub async fn search(app_index: web::Path<RequiredIndex>, data: web::Query<DocumentSearchQuery>, client: Data::<EClientTesting>) -> HttpResponse {
 
     let total_time_taken = std::time::Instant::now();
@@ -162,7 +159,7 @@ pub async fn search(app_index: web::Path<RequiredIndex>, data: web::Query<Docume
     }
 }
 
-pub async fn update_document(app_index_doc: web::Path<RequiredDocumentID>, data: web::Json<Value>, client: Data::<EClientTesting>) -> HttpResponse {  
+pub async fn update_document(app_index_doc: web::Path<RequiredDocumentID>, data: web::Json<BookInput>, client: Data::<EClientTesting>) -> HttpResponse {  
     // if !is_server_up(&client).await { return HttpResponse::ServiceUnavailable().json(json!({"error": ErrorTypes::ServerDown.to_string()})) }
     // Updates the documents in shard
 

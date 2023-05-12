@@ -1,3 +1,5 @@
+use std::iter::zip;
+
 use elasticsearch::{IndexParts, UpdateParts, SearchParts, GetSourceParts, DeleteParts, http::response::Response, Error, BulkOperation, BulkParts}; //, BulkOperations};
 use serde_json::{Value};
 
@@ -13,13 +15,13 @@ impl EClientTesting {
             .await
     }
 
-    pub async fn bulk_index_documents(&self, index: &str, data: &[Value]) -> Result<Response, Error> {
-        let body: Vec<BulkOperation<_>> = data
-            .iter()
-            .map(|p| {
-                BulkOperation::index(p).index(index).into()
-            })
-            .collect();
+    pub async fn bulk_create_documents(&self, index: &str, data: &[Value], ids: &[String]) -> Result<Response, Error> {
+
+        let mut body: Vec<BulkOperation<_>> = vec![];
+
+        for (val, id) in zip(data.iter(), ids){
+            body.push(BulkOperation::create(id, val).index(index).into())
+        }
 
         self.elastic
             .bulk(BulkParts::Index(index))

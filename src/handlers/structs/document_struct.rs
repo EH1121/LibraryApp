@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 /// Used for GET/POST: Search
@@ -8,8 +9,7 @@ pub struct DocumentSearchQuery {
     pub return_fields: Option<String>,
     pub from: Option<i64>,
     pub count: Option<i64>,
-    pub wildcards: Option<bool>,
-    // pub min_percentage_match: Option<i64>
+    pub wildcards: Option<bool>
 }
 
 /// Used for Get: Document
@@ -32,4 +32,16 @@ pub struct RequiredDocumentID {
     pub app_id: String,
     pub index: String,
     pub document_id: String
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BookInput {
+    pub isbn: Option<String>,
+    pub judul: Option<String>,
+    pub penulis: Option<String>,
+    pub penerbit: Option<String>,
+    pub genre: Option<Vec<String>>,
+    pub bahasa: Option<String>,
+    pub jumlah_halaman: Option<usize>,
+    pub tanggal_terbit: NaiveDate
 }

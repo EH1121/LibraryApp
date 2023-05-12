@@ -16,6 +16,8 @@ env_logger = "0.10.0"
 thiserror = "1.0.38"
 futures = "0.3.27"
 actix-cors = "0.6.4"
+chrono = { version = "0.4.24", features = ["serde"]}
+nanoid = "0.4.0"
 
 [profile.release]
 lto = "thin"
