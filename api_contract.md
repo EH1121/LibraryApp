@@ -628,13 +628,20 @@
 * **Data Params**
 
     ```
-    {
-        "data": [
-            <data_object>, 
-            <data_object>, 
-            <data_object>
-            ]
-    }
+    [
+        {
+            "isbn": String (Optional),
+            "judul": String (Optional),
+            "penulis": String (Optional),
+            "penerbit": String (Optional),
+            "genre": Vec<String> (Optional),
+            "bahasa": String (Optional),
+            "jumlah_halaman": usize (Optional),
+            "tanggal_terbit": date (dd-MM-yyyy, Optional)
+        },
+        {data_object},
+        ...
+    ]
     ```
 
 * **Headers**
@@ -696,7 +703,14 @@
 
     ```
     {
-        <json_object>
+        "isbn": String (Optional),
+        "judul": String (Optional),
+        "penulis": String (Optional),
+        "penerbit": String (Optional),
+        "genre": Vec<String> (Optional),
+        "bahasa": String (Optional),
+        "jumlah_halaman": usize (Optional),
+        "tanggal_terbit": date (dd-MM-yyyy, Optional)
     }
     ```
 * **Headers**

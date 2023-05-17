@@ -8,7 +8,6 @@ use super::libs::{{create_or_exists_index, is_server_up, insert_new_app_name, se
 use super::structs::applications_struct::*;
 
 // Since there must always be an application list, this will always create one if it doesnt exist
-
 pub async fn initialize_new_app_id(data: web::Json<RequiredAppName>, client: Data::<EClientTesting>) -> HttpResponse{
 
     if !is_server_up(&client).await { return HttpResponse::ServiceUnavailable().json(json!({"error": ErrorTypes::ServerDown.to_string()})) }

@@ -9,12 +9,13 @@ use super::libs::{index::index_exists, create_or_exists_index, index_name_builde
 use super::errors::*;
 
 /// Index interfaces with application_id
-/// Creating a new index accesses application_list which finds application_id of that specific index, then adds a new index to the id's list
-/// TODO: Do not allow index name with space, dots, etc and allow only alphabets, numbers, and underscores
+/// Creating a new index accesses APPLICATION_LIST_NAME which finds app_id of that specific index, then adds a new index to the id's list
 pub async fn create_index(app: web::Path<RequiredAppID>, data: web::Json<IndexCreate>, client: Data::<EClientTesting>) -> HttpResponse {  
 
     if !is_server_up(&client).await { return HttpResponse::ServiceUnavailable().json(json!({"error": ErrorTypes::ServerDown.to_string()})); };
-    let idx = data.index.trim().to_ascii_lowercase().replace(' ', "_");
+    
+    let mut idx = data.index.trim().to_ascii_lowercase();
+    idx = idx.chars().map(|c| if !c.is_ascii() || c.is_whitespace() {'_'} else {c}).collect(); 
 
     match index_exists(&app.app_id, &idx, &client).await {
         Ok(_) => HttpResponse::Conflict().json(json!({"error": ErrorTypes::IndexExists(idx).to_string()})),

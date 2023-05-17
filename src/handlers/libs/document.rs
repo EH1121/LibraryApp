@@ -27,8 +27,6 @@ pub async fn document_search(app_id: &str, index: &str, body: &Value, from: &Opt
     let name = index_name_builder(app_id, index);
     
     let time_now = std::time::Instant::now();
-    // This takes a while to get a response on large "count" value, perhaps there is a better way?
-    // Benchmarking with returning 10000 (worst case) of movie_records yields 300ms to 400ms on release mode, 400ms to 600ms on debug mode
     let resp = client.search_index(&name, body, from, count).await.unwrap();
     println!("Initial Request elapsed: {:#?}ms", time_now.elapsed().as_millis());
 
@@ -45,10 +43,6 @@ pub async fn document_search(app_id: &str, index: &str, body: &Value, from: &Opt
     };
 
     let receive = std::time::Instant::now();
-    // This takes a while to get a response on large "count" value, perhaps there is a better way?
-    // Benchmarking with returning 10000 (worst case) of movie_records yields 500ms to 600ms on release mode, 1300ms to 1400ms on debug mode
-    // 1. This takes in the body response because the connection is still active
-    // 2. This parses the input into json
     let text_resp = resp.text().await.unwrap();
     println!("Body Response elapsed {:#?}ms", receive.elapsed().as_millis());
 

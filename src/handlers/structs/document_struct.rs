@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 /// Used for GET/POST: Search
@@ -34,14 +33,23 @@ pub struct RequiredDocumentID {
     pub document_id: String
 }
 
+/// Used for POST/PUT: Document
 #[derive(Serialize, Deserialize)]
 pub struct BookInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub isbn: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub judul: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub penulis: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub penerbit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub genre: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bahasa: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub jumlah_halaman: Option<usize>,
-    pub tanggal_terbit: NaiveDate
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tanggal_terbit: Option<String>
 }

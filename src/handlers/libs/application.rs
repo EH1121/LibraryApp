@@ -20,7 +20,6 @@ pub async fn insert_new_app_name(app_name: &str, client: &EClientTesting) -> Sta
         "indexes": []
     });
 
-    // Inserts name into app_id
     client.insert_document(APPLICATION_LIST_NAME, &body).await.unwrap().status_code()
 }
 
@@ -45,6 +44,6 @@ pub async fn exists_app_name(app_name: &str, client: &EClientTesting) -> bool{
     let body = search_body_builder(&Some(app_name_exact), &Some(vec!["name".to_string()]), &None);
     let resp = client.search_index(APPLICATION_LIST_NAME, &body, &None, &Some(1)).await.unwrap();
     let resp_json = resp.json::<Value>().await.unwrap();
-    let num = resp_json["hits"]["total"]["value"].as_i64().unwrap();
+    let num = resp_json["hits"]["total"]["value"].as_i64().unwrap(); 
     num > 0
 }

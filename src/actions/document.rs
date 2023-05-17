@@ -6,7 +6,6 @@ use serde_json::{Value};
 use super::EClientTesting;
 
 impl EClientTesting {
-    /// Inserts a new document into index
     pub async fn insert_document(&self, index: &str, data: &Value) -> Result<Response, Error>{
         self.elastic
             .index(IndexParts::Index(index))
@@ -30,20 +29,16 @@ impl EClientTesting {
             .await
     }
 
-    /// Finds document in index
     pub async fn search_index(&self, index: &str, body: &Value, from: &Option<i64>, count: &Option<i64>) -> Result<Response, Error>{
 
         let from = from.unwrap_or(0);
         let count = count.unwrap_or(20);
-        // let header = HeaderName::from_static("accept-encoding");
-        // let value = HeaderValue::from_str("gzip, deflate, br").unwrap();
 
         self.elastic
             .search(SearchParts::Index(&[index]))
             .from(from)
             .size(count)
             .body(body)
-            // .header(header, value)
             .send()
             .await
     }
@@ -52,11 +47,6 @@ impl EClientTesting {
     pub async fn get_document(&self, index: &str, doc_id: &str, retrieve_fields: &Option<String>) -> Result<Response, Error>{
         
         let fields_to_return = retrieve_fields.as_deref().unwrap_or("*");
-        // let resp = client.elastic
-        //     .get(GetParts::IndexId(index, document_id))
-        //     .send()
-        //     .await
-        //     .unwrap();
 
         self.elastic
             .get_source(GetSourceParts::IndexId(index, doc_id))
@@ -73,23 +63,6 @@ impl EClientTesting {
             .send()
             .await
     }
-
-    // Testing
-    // pub async fn bulk_update_documents(&self, index: &str, id_name: &str, data: &[Value]) -> Result<Response, Error> {
-    //     let body: Vec<BulkOperation<_>> = data
-    //         .iter()
-    //         .map(|p| {
-    //             BulkOperation::update(p[id_name].to_string(), p).into()
-    //         })
-    //         .collect();
-
-    //     self.elastic
-    //         .bulk(BulkParts::Index(index))
-    //         .body(body)
-    //         .send()
-    //         .await
-    // }
-
 
     /// Deletes document on an index
     pub async fn delete_document(&self, index: &str, document_id: &str) -> Result<Response, Error>{

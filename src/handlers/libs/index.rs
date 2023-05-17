@@ -30,7 +30,13 @@ pub async fn create_or_exists_index(app_id: Option<String>, index: &str, shards:
             json!(
                 {
                     "mappings": { 	
-                        "dynamic":"true"
+                        "dynamic":"true",
+                        "properties": {
+                            "tanggal_terbit": {
+                                "type": "date",
+                                "format": "dd-MM-yyyy"
+                            }
+                        }
                     },
                     "settings": {
                         "index.number_of_shards": shards.unwrap_or(5),

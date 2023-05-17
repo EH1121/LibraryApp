@@ -33,16 +33,18 @@ pub async fn create_bulk_documents(app_index: web::Path<RequiredIndex>, data: we
     let mut failures: Vec<BulkFailures> = vec![];
     if json["errors"].as_bool().unwrap() {
         for (loc, val) in json["items"].as_array().unwrap().iter().enumerate(){
-            if !val["index"]["error"].is_null(){
+            
+            if !val["create"]["error"].is_null(){
                 failures.push(
                     BulkFailures {
                         document_number: loc,
-                        error: val["index"]["error"]["reason"].as_str().unwrap().to_string(),
-                        status: val["index"]["status"].as_i64().unwrap()
+                        error: val["create"]["error"]["reason"].as_str().unwrap().to_string(),
+                        status: val["create"]["status"].as_i64().unwrap()
                     }
                 );
             }
         }
+        println!("{:#?}", json["items"]);
     }
     
     HttpResponse::build(status).json(serde_json::json!({

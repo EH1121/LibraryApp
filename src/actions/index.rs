@@ -36,7 +36,6 @@ impl EClientTesting{
 
     /// Checks if index exists
     pub async fn check_index(&self, index: &str) -> Result<Response, Error>{
-        // Check if index exists
         self.elastic
             .indices()
             .exists(IndicesExistsParts::Index(&[index]))
