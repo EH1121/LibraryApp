@@ -43,8 +43,8 @@ async fn main() -> std::io::Result<()> {
                 
                 .route("/document/{app_id}/{index}", web::post().to(create_bulk_documents))
                 .route("/document/{app_id}/{index}/{document_id}", web::get().to(get_document))
-                .route("/search/{app_id}/{index}", web::post().to(post_search))
-                .route("/search/{app_id}/{index}", web::get().to(search))
+                .route("/search/{app_id}", web::post().to(post_search))
+                .route("/search/{app_id}", web::get().to(search))
                 .route("/document/{app_id}/{index}/{document_id}", web::put().to(update_document))
                 .route("/document/{app_id}/{index}/{document_id}", web::delete().to(delete_document))
         )

@@ -457,7 +457,7 @@
 
     
 
-## POST /api/search/:app_id/:index
+## POST /api/search/:app_id
 ----
     Searches an index for documents
 
@@ -466,6 +466,8 @@
     ***Required:*** 
 
     `app_id=[string]`
+
+    ***Optional:***
 
     `index=[string]`
 
@@ -541,9 +543,9 @@
 
     `app_id=[string]`
 
-    `index=[string]`
-
     ***Optional:***
+
+    `index=[string]`
 
     `search_term=[string]`
 
@@ -558,6 +560,7 @@
     `count=[int]`
 
     `wildcards=[bool]`
+    
 * **Data Params**
 
     None

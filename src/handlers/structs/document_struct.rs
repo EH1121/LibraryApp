@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Used for GET/POST: Search
 #[derive(Deserialize)]
 pub struct DocumentSearchQuery {
+    pub index: Option<String>,
     pub search_term: Option<String>,
     pub search_in: Option<String>,
     pub return_fields: Option<String>,

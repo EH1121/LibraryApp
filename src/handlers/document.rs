@@ -2,7 +2,7 @@ use actix_web::{web::{self, Data}, HttpResponse};
 use reqwest::StatusCode;
 use serde_json::{json, Value};
 use crate::{actions::EClientTesting, handlers::{libs::{index_name_builder, search_body_builder}, errors::ErrorTypes}};
-use super::{libs::{check_server_up_exists_app_index, document_search}, structs::document_struct::BookInput};
+use super::{libs::{check_server_up_exists_app_index, document_search}, structs::{document_struct::BookInput, applications_struct::RequiredAppID, index_struct::OptionalIndex}};
 use super::structs::{document_struct::{DocumentSearchQuery, RequiredDocumentID, ReturnFields, BulkFailures}, index_struct::RequiredIndex};
 use nanoid::nanoid;
 
@@ -85,14 +85,22 @@ pub async fn get_document(data: web::Path<RequiredDocumentID>, query: web::Path<
 }
 
 /// A Post method for search, also returns a list of documents from index if no query is given
-pub async fn post_search(app_index: web::Path<RequiredIndex>, data: web::Json<DocumentSearchQuery>, client: Data::<EClientTesting>) -> HttpResponse {
+pub async fn post_search(app: web::Path<RequiredAppID>, index: web::Path<OptionalIndex>, data: web::Json<DocumentSearchQuery>, client: Data::<EClientTesting>) -> HttpResponse {
 
     let total_time_taken = std::time::Instant::now();
 
-    let idx = app_index.index.trim().to_ascii_lowercase();
-    match check_server_up_exists_app_index(&app_index.app_id, &idx, &client).await{
+    let idx = index.index.as_ref().unwrap_or(&"*".to_string()).trim().to_ascii_lowercase();
+
+    match check_server_up_exists_app_index(&app.app_id, &idx, &client).await{
         Ok(_) => (),
-        Err((status, err)) => return HttpResponse::build(status).json(json!({"error": err.to_string()}))
+        Err((status, err)) => 
+            match err {
+                ErrorTypes::IndexNotFound(_) => 
+                    if !index.index.is_none(){
+                        return HttpResponse::build(status).json(json!({"error": err.to_string()}))
+                    },
+                _ => return HttpResponse::build(status).json(json!({"error": err.to_string()}))
+            }
     };
     
     let fields_to_search = data.search_in.to_owned().map(|val| val.split(',').map(|x| x.trim().to_string()).collect());
@@ -106,7 +114,7 @@ pub async fn post_search(app_index: web::Path<RequiredIndex>, data: web::Json<Do
     };
     let body = search_body_builder(&term, &fields_to_search, &data.return_fields);
 
-    match document_search(&app_index.app_id, &idx, &body, &data.from, &data.count, &client).await {
+    match document_search(&app.app_id, &idx, &body, &data.from, &data.count, &client).await {
         Ok((status, json_resp)) => {
             HttpResponse::build(status).json(json!({
                 "search_took": &json_resp["took"],
@@ -122,30 +130,36 @@ pub async fn post_search(app_index: web::Path<RequiredIndex>, data: web::Json<Do
     }
 }
 
-pub async fn search(app_index: web::Path<RequiredIndex>, data: web::Query<DocumentSearchQuery>, client: Data::<EClientTesting>) -> HttpResponse {
+pub async fn search(app: web::Path<RequiredAppID>, data: web::Query<DocumentSearchQuery>, client: Data::<EClientTesting>) -> HttpResponse {
 
     let total_time_taken = std::time::Instant::now();
 
-    let idx = app_index.index.trim().to_ascii_lowercase();
+    let idx = data.index.as_ref().unwrap_or(&"*".to_string()).trim().to_ascii_lowercase();
 
-    match check_server_up_exists_app_index(&app_index.app_id, &idx, &client).await{
+    match check_server_up_exists_app_index(&app.app_id, &idx, &client).await{
         Ok(_) => (),
-        Err((status, err)) => return HttpResponse::build(status).json(json!({"error": err.to_string()}))
+        Err((status, err)) => 
+            match err {
+                ErrorTypes::IndexNotFound(_) => 
+                    if !data.index.is_none(){
+                        return HttpResponse::build(status).json(json!({"error": err.to_string()}))
+                    },
+                _ => return HttpResponse::build(status).json(json!({"error": err.to_string()}))
+            }
     };
     
     let fields_to_search = data.search_in.to_owned().map(|val| val.split(',').map(|x| x.trim().to_string()).collect());
 
     let term = if data.search_term.is_some() && data.wildcards.unwrap_or(false){
-        let mut z = data.search_term.as_deref().unwrap().trim().to_string().replace(' ', "* ");
+        let mut z = data.search_term.clone().unwrap().trim().to_string().replace(' ', "* ");
         z.push('*');
         Some(z)
     } else {
         data.search_term.clone()
     };
-
     let body = search_body_builder(&term, &fields_to_search, &data.return_fields);
 
-    match document_search(&app_index.app_id, &idx, &body, &data.from, &data.count, &client).await {
+    match document_search(&app.app_id, &idx, &body, &data.from, &data.count, &client).await {
         Ok((status, json_resp)) => {
             HttpResponse::build(status).json(json!({
                 "search_took": &json_resp["took"],
@@ -157,7 +171,7 @@ pub async fn search(app_index: web::Path<RequiredIndex>, data: web::Query<Docume
                 "count": &data.count.unwrap_or(20)
             }))
         },
-        Err(x) => x,
+        Err(err) => err,
     }
 }
 
