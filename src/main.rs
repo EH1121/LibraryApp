@@ -1,17 +1,20 @@
-use actions::EClientTesting;
 use actix_web::{web::{self, Data}, App, HttpServer};
-use handlers::{application::{initialize_new_app_id, get_application_list, get_application, delete_application, update_application,}, index::get_app_list_of_indexes};
-use handlers::document::{post_search, search, update_document, delete_document, get_document, create_bulk_documents};
-use handlers::index::{get_index, create_index, update_mappings, get_mappings, delete_index};
-mod middlewares;
-use middlewares::cors::cors;
+use actix_cors::Cors;
+use database::Database;
+use user::*;
+use genre::*;
+use book::*;
 
-mod actions;
-mod handlers;
+mod database;
+mod book;
+mod genre;
+mod user;
+mod structs;
+mod libs;
 
 /// Where should the main list be
 /// The constant must be in lowercase, without space, and lowercase alphanumeric
-pub const APPLICATION_LIST_NAME: &str = "user_apps";
+pub const USER_LIST: &str = "users_apps";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -19,37 +22,45 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
-    let client = Data::new(EClientTesting::new("http://127.0.0.1:9200"));
+    let db = Data::new(Database::new("http://127.0.0.1:9200"));
 
     // Start server
-    HttpServer::new(move || {
+    HttpServer::new( move || {
         App::new()
-        .wrap(cors())
+        .wrap(Cors::permissive())
         .service(
-            web::scope("/api")
-                .app_data(client.clone())
-                .route("/app", web::post().to(initialize_new_app_id))
-                .route("/apps", web::get().to(get_application_list))
-                .route("/app/{app_id}", web::get().to(get_application))
-                .route("/app", web::put().to(update_application))   
-                .route("/app/{app_id}", web::delete().to(delete_application))
+            web::scope("")
+                .app_data(db.clone())
+                .service(
+                    web::scope("/user")
+                        .route("", web::post().to(create_new_user))
+                        .route("", web::put().to(update_user))   
+                        .route("/{user_id}", web::get().to(get_a_user))
+                        .route("/{user_id}", web::delete().to(delete_user))
+                )
+
+                .route("/users", web::get().to(get_user_list))
                 
-                .route("/index/{app_id}", web::post().to(create_index))
-                .route("/index/{app_id}", web::get().to(get_index))
-                .route("/index/list/{app_id}", web::get().to(get_app_list_of_indexes))
-                .route("/index/mappings/{app_id}/{index}", web::get().to(get_mappings))
-                .route("/index/mappings", web::put().to(update_mappings))
-                .route("/index/{app_id}/{index}", web::delete().to(delete_index))
+                .service(
+                    web::scope("/genre/{user_id}")
+                        .route("", web::post().to(create_genre))
+                        .route("", web::get().to(get_genre))
+                        .route("/{genre}", web::delete().to(delete_genre))
+                )
                 
-                .route("/document/{app_id}/{index}", web::post().to(create_bulk_documents))
-                .route("/document/{app_id}/{index}/{document_id}", web::get().to(get_document))
-                .route("/search/{app_id}", web::post().to(post_search))
-                .route("/search/{app_id}", web::get().to(search))
-                .route("/document/{app_id}/{index}/{document_id}", web::put().to(update_document))
-                .route("/document/{app_id}/{index}/{document_id}", web::delete().to(delete_document))
+                .service(
+                    web::scope("/books/{user_id}/{genre}")
+                        .route("", web::post().to(create_books))
+                        .route("/{book_id}", web::get().to(get_book))
+                        .route("/{book_id}", web::put().to(update_book))
+                        .route("/{book_id}", web::delete().to(delete_book))
+                        
+                )
+
+                .route("/search/{user_id}", web::post().to(search_books))   
         )
         })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", 1234))?
     .run()
     .await
 }

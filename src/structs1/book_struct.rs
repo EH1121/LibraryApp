@@ -1,40 +1,34 @@
 use serde::{Deserialize, Serialize};
 
-/// Used for GET/POST: Search
 #[derive(Deserialize)]
-pub struct DocumentSearchQuery {
-    pub index: Option<String>,
-    pub search_term: Option<String>,
-    pub search_in: Option<String>,
-    pub return_fields: Option<String>,
-    pub from: Option<i64>,
-    pub count: Option<i64>,
-    pub wildcards: Option<bool>
-}
-
-/// Used for Get: Document
-#[derive(Deserialize)]
-pub struct ReturnFields{
+pub struct OptionalReturnFields{
     pub return_fields: Option<String>
 }
 
-/// For Bulk Errors Output
 #[derive(Serialize)]
-pub struct BulkFailures {
-    pub document_number: usize,
-    pub error: String,
-    pub status: i64
+pub struct Failures {
+    pub doc_num: usize,
+    pub reason: String,
+    pub code: i64
 }
 
-/// Used for Delete: Document
 #[derive(Deserialize)]
-pub struct RequiredDocumentID {
-    pub app_id: String,
-    pub index: String,
-    pub document_id: String
+pub struct UserBookID {
+    pub user_id: String,
+    pub genre: String,
+    pub book_id: String
 }
 
-/// Used for POST/PUT: Document
+#[derive(Deserialize)]
+pub struct BookSearchQuery {
+    pub genre: Option<String>,
+    pub search_term: Option<String>,
+    pub search_fields: Option<String>,
+    pub return_fields: Option<String>,
+    pub from: Option<i64>,
+    pub count: Option<i64>
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct BookInput {
     #[serde(skip_serializing_if = "Option::is_none")]

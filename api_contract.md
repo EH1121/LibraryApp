@@ -1,8 +1,8 @@
-# Application
+# Users
 
-## GET /api/apps
+## GET /users
 ----
-    Gets a list of applications
+    Get User List
 
 * **URL Params**
 
@@ -28,15 +28,15 @@
         ]
         ```
 
-## GET /api/app/:app_id
+## GET /user/:user_id
 ----
-    Gets a specific application
+    Gets a single User
 
 * **URL Params**
 
     ***Required:***
 
-    `app_id=[string]`
+    `user_id=[string]`
 
 * **Data Params**
 
@@ -53,13 +53,14 @@
         ```
         {<data_object>>}
         ```
+        
 * **Error Response**
     * **Code:** 404
         
         **Content:**
         ```
         {
-            "error": "Application [id] not found"
+            "error": "User ID Not Found: [id]"
         }
         ```
 
