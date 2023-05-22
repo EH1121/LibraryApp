@@ -18,19 +18,11 @@ impl Database {
         }
     }
 
-    pub async fn create_single_document(&self, index: &str, data: impl Serialize) -> Result<Response, Error>{
-        self.es
-            .index(IndexParts::Index(index))
-            .body(data)
-            .send()
-            .await
-    }
-
     pub async fn index_documents(&self, index: &str, data: &[impl Serialize]) -> Result<Response, Error> {
         let body: Vec<BulkOperation<_>> = data
             .iter()
             .map(|p| {
-                BulkOperation::index(p).index(index).into()
+                BulkOperation::index(p).into()
             })
             .collect();
 
@@ -51,13 +43,13 @@ impl Database {
             .await
     }
 
-    pub async fn get_single_document(&self, index: &str, doc_id: &str, retrieve_fields: &Option<String>) -> Result<Response, Error>{
+    pub async fn get_single_document(&self, index: &str, doc_id: &str, retrieve_fields: Option<String>) -> Result<Response, Error>{
         
-        let fields_to_return = retrieve_fields.as_deref().unwrap_or("*");
+        let fields_to_return = retrieve_fields.unwrap_or("*".to_string());
 
         self.es
             .get_source(GetSourceParts::IndexId(index, doc_id))
-            ._source_includes(&[fields_to_return])
+            ._source_includes(&[&fields_to_return])
             .send()
             .await
     }

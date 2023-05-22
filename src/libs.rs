@@ -12,7 +12,7 @@ pub enum Errors {
     GenreNotFound(String),
     #[error("Genre already exist: {0}")]
     GenreExists(String),
-    #[error("Book ID Not Found: {0}")]
+    #[error("Cannot find book with ID: {0}")]
     BookNotFound(String),
     #[error("Bad Data Given")]
     BadRequest,
@@ -22,7 +22,7 @@ pub enum Errors {
     Unknown
 }
 
-pub async fn get_book(genre: &str, book_id: &str, retrieve_fields: &Option<String>, db: &Database) -> Result<(StatusCode, Value), (StatusCode, Errors)>{
+pub async fn get_book(genre: &str, book_id: &str, retrieve_fields: Option<String>, db: &Database) -> Result<(StatusCode, Value), (StatusCode, Errors)>{
     let response = db.get_single_document(genre, book_id, retrieve_fields).await.unwrap();
     
     if !response.status_code().is_success() {
@@ -101,19 +101,19 @@ pub async fn genre_exists(user_id: &str, genre: &str, db: &Database) -> Result<H
                 false => Err((StatusCode::NOT_FOUND, Errors::GenreNotFound(genre.to_string()), l))
             }
         },
-        Err((status, error)) => return Err((status, error, HashSet::new()))
+        Err((s, e)) => Err((s, e, HashSet::new()))
     }
 }
 
 pub async fn get_user_genre_list(user_id: &str, db: &Database) -> Result<HashSet<String>, (StatusCode, Errors)> {
-    match get_book(USER_LIST, user_id, &Some("genres".to_string()), db).await{
+    match get_book(USER_LIST, user_id, Some("genres".to_string()), db).await{
         Ok((_, v)) => {
             match v.get("genres") {
                 Some(x) => Ok(serde_json::from_value(json!(x)).unwrap()),
                 None => Ok(HashSet::new())
             }
         },
-        Err((code, _)) => return match code {
+        Err((code, _)) => match code {
             StatusCode::NOT_FOUND => Err((code, Errors::UserNotFound(user_id.to_string()))),
             _ => Err((code, Errors::Unknown))
         },
@@ -128,7 +128,7 @@ pub async fn check_userid_genre(user_id: &str, genre: &str, db: &Database) -> Re
     if check_server(db).await {
         match genre_exists(user_id, genre, db).await {
             Ok(_) => return Ok(()),
-            Err((status, err, _)) => return Err((status, err))
+            Err((s, e, _)) => return Err((s, e))
         }
     }
     Err((StatusCode::SERVICE_UNAVAILABLE, Errors::ServerDown))

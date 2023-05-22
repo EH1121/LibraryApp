@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
                 )
                 
                 .service(
-                    web::scope("/books/{user_id}/{genre}")
+                    web::scope("/book/{user_id}/{genre}")
                         .route("", web::post().to(create_books))
                         .route("/{book_id}", web::get().to(get_book))
                         .route("/{book_id}", web::put().to(update_book))

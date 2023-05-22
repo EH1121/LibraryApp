@@ -3,28 +3,6 @@ use serde_json::json;
 use crate::{database::Database, USER_LIST, libs::*};
 use super::structs::*;
 
-pub async fn create_genre(path: web::Path<UserID>, data: web::Json<Genre>, db: Data::<Database>) -> HttpResponse {  
-
-    if !check_server(&db).await { return HttpResponse::ServiceUnavailable().json(json!({"error": Errors::ServerDown.to_string()})); };
-    
-    let genre: String = data.genre.to_lowercase().chars().map(|c| if !c.is_ascii() || c.is_whitespace() {'_'} else {c}).collect();
-
-    match genre_exists(&path.user_id, &genre, &db).await {
-        Ok(_) => HttpResponse::Conflict().json(json!({"error": Errors::GenreExists(genre).to_string()})),
-        Err((s, e, mut l)) => match e {
-            Errors::UserNotFound(_) => HttpResponse::build(s).json(json!({"error": e.to_string()})),
-            Errors::GenreNotFound(_) => {
-                l.insert(genre.clone());
-                let body = json!({"genres": l});
-                let _ = db.update_single_document(USER_LIST, &path.user_id, &body).await;
-                let _ = create_new_genre(Some(path.user_id.to_string()), &genre, &db).await;
-                HttpResponse::Created().finish()
-            },
-            _ => HttpResponse::build(s).json(json!({"error": Errors::Unknown.to_string()}))
-        }
-    }
-}
-
 pub async fn get_genre(path: web::Path<UserID>, query: web::Query<OptionalGenre>, db: Data::<Database>) -> HttpResponse {  
 
     match &query.genre {
@@ -52,6 +30,28 @@ pub async fn get_genre(path: web::Path<UserID>, query: web::Query<OptionalGenre>
     HttpResponse::build(response.status_code()).json(response.json::<Vec<IndexResponse>>().await.unwrap())
 }
 
+pub async fn create_genre(path: web::Path<UserID>, data: web::Json<Genre>, db: Data::<Database>) -> HttpResponse {  
+
+    if !check_server(&db).await { return HttpResponse::ServiceUnavailable().json(json!({"error": Errors::ServerDown.to_string()})); };
+    
+    let genre: String = data.genre.to_lowercase().chars().map(|c| if !c.is_ascii() || c.is_whitespace() {'_'} else {c}).collect();
+
+    match genre_exists(&path.user_id, &genre, &db).await {
+        Ok(_) => HttpResponse::Conflict().json(json!({"error": Errors::GenreExists(genre).to_string()})),
+        Err((s, e, mut l)) => match e {
+            Errors::UserNotFound(_) => HttpResponse::build(s).json(json!({"error": e.to_string()})),
+            Errors::GenreNotFound(_) => {
+                l.insert(genre.clone());
+                let body = json!({"genres": l});
+                let _ = db.update_single_document(USER_LIST, &path.user_id, &body).await;
+                create_new_genre(Some(path.user_id.to_string()), &genre, &db).await;
+                HttpResponse::Created().finish()
+            },
+            _ => HttpResponse::build(s).json(json!({"error": Errors::Unknown.to_string()}))
+        }
+    }
+}
+
 pub async fn delete_genre(path: web::Path<UserGenre>, db: Data::<Database>) -> HttpResponse {  
     let genre = path.genre.to_lowercase();
     match check_userid_genre(&path.user_id, &genre, &db).await{
@@ -59,7 +59,6 @@ pub async fn delete_genre(path: web::Path<UserGenre>, db: Data::<Database>) -> H
         Err((s, e)) => return HttpResponse::build(s).json(json!({"error": e.to_string()}))
     };
     let code = db.delete_single_index(format!("{}.{}", &path.user_id.to_lowercase(), &genre)).await.unwrap().status_code();
-    println!("{} {} {}", genre, code, format!("{}.{}", &path.user_id.to_lowercase(), &genre));
 
     if !code.is_success(){
         return match code {

@@ -2,44 +2,6 @@ use crate::{database::Database, structs::*, libs::*};
 use actix_web::{web::{self, Data}, HttpResponse, http::StatusCode};
 use serde_json::{json, Value};
 
-pub async fn create_books(path: web::Path<UserGenre>, data: web::Json<Vec<BookInput>>, db: Data::<Database>) -> HttpResponse {
-
-    let genre = path.genre.to_lowercase();
-
-    match check_userid_genre(&path.user_id, &genre, &db).await{
-        Ok(_) => (),
-        Err((s, e)) => return HttpResponse::build(s).json(json!({"error": e.to_string()})),
-    }
-
-    let response = db.index_documents(
-        &format!("{}.{}", &path.user_id.to_lowercase(), &genre), 
-        data.as_ref())
-        .await.unwrap()
-        .json::<Value>()
-        .await.unwrap();
-
-    let mut fail: Vec<Failures> = vec![];
-
-    if !response["errors"].is_null() {
-        if response["errors"].as_bool().unwrap(){
-            for (num, dat) in response["items"].as_array().unwrap().iter().enumerate(){
-                if !dat["create"]["error"].is_null(){
-                    fail.push(
-                        Failures {
-                            doc_num: num,
-                            reason: dat["create"]["error"]["reason"].as_str().unwrap().to_string(),
-                            code: dat["create"]["status"].as_i64().unwrap()
-                        }
-                    );
-                }
-            }
-        }
-    } else {
-        return HttpResponse::Ok().json(json!({"error": Errors::Unknown.to_string()}));
-    }
-    HttpResponse::Ok().json(fail)
-}
-
 pub async fn get_book(path: web::Path<UserBookID>, query: web::Path<OptionalReturnFields>, db: Data::<Database>) -> HttpResponse {  
 
     let genre = path.genre.to_lowercase();
@@ -50,7 +12,7 @@ pub async fn get_book(path: web::Path<UserBookID>, query: web::Path<OptionalRetu
         Err((s, e)) => return HttpResponse::build(s).json(json!({"error": e.to_string()}))
     };
 
-    let response = db.get_single_document(genre_index, &path.book_id, &query.return_fields).await.unwrap();
+    let response = db.get_single_document(genre_index, &path.book_id, query.return_fields.clone()).await.unwrap();
     
     if !response.status_code().is_success() {
         let e = match response.status_code(){
@@ -103,10 +65,48 @@ pub async fn search_books(path: web::Path<UserID>, genre: web::Path<OptionalGenr
     HttpResponse::Ok().json(json!({
         "took": &took.elapsed().as_millis(),
         "data": &response["hits"]["hits"],
-        "total_data": &response["hits"]["total"]["value"],
+        "total": &response["hits"]["total"]["value"],
         "from": &query.from.unwrap_or(0),
         "count": &query.count.unwrap_or(20)
     }))
+}
+
+pub async fn create_books(path: web::Path<UserGenre>, data: web::Json<Vec<BookInput>>, db: Data::<Database>) -> HttpResponse {
+
+    let genre = path.genre.to_lowercase();
+
+    match check_userid_genre(&path.user_id, &genre, &db).await{
+        Ok(_) => (),
+        Err((s, e)) => return HttpResponse::build(s).json(json!({"error": e.to_string()})),
+    }
+
+    let response = db.index_documents(
+        &format!("{}.{}", &path.user_id.to_lowercase(), &genre), 
+        data.as_ref())
+        .await.unwrap()
+        .json::<Value>()
+        .await.unwrap();
+
+    let mut fail: Vec<Failures> = vec![];
+
+    if !response["errors"].is_null() {
+        if response["errors"].as_bool().unwrap(){
+            for (num, dat) in response["items"].as_array().unwrap().iter().enumerate(){
+                if !dat["create"]["error"].is_null(){
+                    fail.push(
+                        Failures {
+                            doc_num: num,
+                            reason: dat["create"]["error"]["reason"].as_str().unwrap().to_string(),
+                            code: dat["create"]["status"].as_i64().unwrap()
+                        }
+                    );
+                }
+            }
+        }
+    } else {
+        return HttpResponse::Ok().json(json!({"error": Errors::Unknown.to_string()}));
+    }
+    HttpResponse::Ok().json(fail)
 }
 
 pub async fn update_book(path: web::Path<UserBookID>, data: web::Json<BookInput>, db: Data::<Database>) -> HttpResponse {
