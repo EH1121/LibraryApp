@@ -92,12 +92,12 @@ pub async fn create_books(path: web::Path<UserGenre>, data: web::Json<Vec<BookIn
     if !response["errors"].is_null() {
         if response["errors"].as_bool().unwrap(){
             for (num, dat) in response["items"].as_array().unwrap().iter().enumerate(){
-                if !dat["create"]["error"].is_null(){
+                if !dat["index"]["error"].is_null(){
                     fail.push(
                         Failures {
                             doc_num: num,
-                            reason: dat["create"]["error"]["reason"].as_str().unwrap().to_string(),
-                            code: dat["create"]["status"].as_i64().unwrap()
+                            reason: dat["index"]["error"]["reason"].as_str().unwrap().to_string(),
+                            code: dat["index"]["status"].as_i64().unwrap()
                         }
                     );
                 }
