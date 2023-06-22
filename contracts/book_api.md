@@ -186,7 +186,7 @@
             {
                 "error": "Bad Data Given"
             }
-            
+
 ## POST /book/:user_id/:genre
 ----
     Insert One or Multiple Books into a genre
@@ -309,7 +309,7 @@
                 "error": "Cannot find genre: [genre]"
             }
     
-## DELETE /api/book/:user_id/:genre/:book_id
+## DELETE /book/:user_id/:genre/:book_id
 ----
     Delete a single book
 

@@ -73,8 +73,6 @@ pub struct UserBookID {
 pub struct BookSearchQuery {
     pub genre: Option<String>,
     pub search_term: Option<String>,
-    pub search_fields: Option<String>,
-    pub return_fields: Option<String>,
     pub from: Option<i64>,
     pub count: Option<i64>
 }

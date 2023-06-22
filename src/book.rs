@@ -48,10 +48,8 @@ pub async fn search_books(path: web::Path<UserID>, genre: web::Query<OptionalGen
                 _ => return HttpResponse::build(s).json(json!({"error": e.to_string()}))
             }
     };
-    
-    let fields = query.search_fields.as_ref().map(|s| s.split(',').map(|x| x.trim().to_owned()).collect());
 
-    let term = if query.search_term.is_some() {
+    let terms = if query.search_term.is_some() {
         let mut z = query.search_term.as_ref().unwrap().replace(r" *", "* ");
         z.push('*');
         Some(z)
@@ -59,8 +57,31 @@ pub async fn search_books(path: web::Path<UserID>, genre: web::Query<OptionalGen
         None
     };
 
+    let body = if let Some(term) = terms {
+        json!({
+            "_source": {
+                "includes": "*"
+            },
+            "query": {
+                "query_string": {
+                    "query": term,
+                    "type": "cross_fields"
+                }
+            }
+        })
+    } else {
+        json!({
+            "_source": {
+                "includes": "*"
+            },
+            "query": {
+                "match_all": {} 
+            },
+        })
+    };
+
     let response = db.search(&genre_index, 
-        &search_body(&term, &fields, &query.return_fields), 
+            body, 
             query.from, 
             query.count
         ).await.unwrap()
@@ -100,9 +121,7 @@ pub async fn search_books_get(path: web::Path<UserID>, query: web::Query<BookSea
             }
     };
 
-    let fields = query.search_fields.as_ref().map(|s| s.split(',').map(|x| x.trim().to_owned()).collect());
-
-    let term = if query.search_term.is_some() {
+    let terms = if query.search_term.is_some() {
         let mut z = query.search_term.as_ref().unwrap().replace(r" *", "* ");
         z.push('*');
         Some(z)
@@ -110,11 +129,31 @@ pub async fn search_books_get(path: web::Path<UserID>, query: web::Query<BookSea
         None
     };
 
-    let response = db.search(&genre_index, 
-        &search_body(&term, &fields, &query.return_fields), 
-            query.from, 
-            query.count
-        ).await.unwrap()
+    let body = if let Some(term) = terms {
+        json!({
+            "_source": {
+                "includes": "*"
+            },
+            "query": {
+                "query_string": {
+                    "query": term,
+                    "type": "cross_fields"
+                }
+            }
+        })
+    } else {
+        json!({
+            "_source": {
+                "includes": "*"
+            },
+            "query": {
+                "match_all": {} 
+            },
+        })
+    };
+
+    let response = db.search(&genre_index, body, query.from, query.count)
+        .await.unwrap()
         .json::<Value>()
         .await.unwrap();
 

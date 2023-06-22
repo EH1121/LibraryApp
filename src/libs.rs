@@ -36,38 +36,6 @@ pub async fn get_book(genre: &str, book_id: &str, retrieve_fields: Option<String
     Ok((response.status_code(), response.json::<Value>().await.unwrap()))
 }
 
-pub fn search_body(terms: &Option<String>, search_fields: &Option<Vec<String>>, get_fields: &Option<String>) -> Value {
-
-    let fields = match get_fields {
-        Some(val) => val.split(',').map(|x| x.trim().to_string()).collect(),
-        None => vec!["*".to_string()],
-    };
-
-    if let Some(term) = terms {
-        json!({
-            "_source": {
-                "includes": fields
-            },
-            "query": {
-                "query_string": {
-                    "query": term,
-                    "type": "cross_fields",
-                    "fields": search_fields.to_owned().unwrap_or(vec!["*".to_string()])
-                }
-            }
-        })
-    } else {
-        json!({
-            "_source": {
-                "includes": fields
-            },
-            "query": {
-                "match_all": {} 
-            },
-        })
-    }
-}
-
 pub async fn create_new_genre(user_id: Option<String>, genre: &str, db: &Database) {
     let genre_index = match user_id {
         Some(x) => format!("{}.{}", x.to_lowercase(), &genre.to_lowercase()),

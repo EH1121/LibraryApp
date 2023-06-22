@@ -6,7 +6,15 @@ use super::structs::*;
 pub async fn get_user_list(path: web::Path<GetUserList>, db: Data::<Database>) -> HttpResponse{
     if !check_server(&db).await { return HttpResponse::build(StatusCode::SERVICE_UNAVAILABLE).json(json!({"error": Errors::ServerDown.to_string()}))}
     create_new_genre(None, USER_LIST, &db).await;
-    let body = search_body(&path.user_name.clone(), &None, &Some("*".to_string()));
+    let body =
+        json!({
+            "_source": {
+                "includes": "*"
+            },
+            "query": {
+                "match_all": {} 
+            },
+        });
     HttpResponse::Ok().json(db.search(USER_LIST, &body, path.from, path.count).await.unwrap().json::<Value>().await.unwrap()["hits"]["hits"].clone())
 }
 
