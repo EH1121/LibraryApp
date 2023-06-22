@@ -25,11 +25,16 @@ pub async fn get_book(path: web::Path<UserBookID>, query: web::Path<OptionalRetu
     HttpResponse::build(response.status_code()).json(response.json::<Value>().await.unwrap())
 }
 
-pub async fn search_books(path: web::Path<UserID>, genre: web::Path<OptionalGenre>, query: web::Json<BookSearchQuery>, db: Data::<Database>) -> HttpResponse {
+pub async fn search_books(path: web::Path<UserID>, genre: web::Query<OptionalGenre>, query: web::Json<BookSearchQuery>, db: Data::<Database>) -> HttpResponse {
 
     let took = std::time::Instant::now();
 
-    let to_search = genre.genre.as_ref().unwrap_or(&"*".to_string()).to_lowercase();
+    let mut to_search = genre.genre.as_ref().unwrap_or(&"*".to_string()).to_lowercase();
+    to_search = if to_search.eq(""){
+        "*".to_string()
+    } else {
+        to_search
+    };
     let genre_index = format!("{}.{}", &path.user_id.to_lowercase(), &to_search);
 
     match check_userid_genre(&path.user_id, &to_search, &db).await{
@@ -37,13 +42,64 @@ pub async fn search_books(path: web::Path<UserID>, genre: web::Path<OptionalGenr
         Err((s, e)) => 
             match e {
                 Errors::GenreNotFound(_) => 
-                    if genre.genre.is_some(){
+                    if query.genre.is_some() && !(query.genre.as_ref().unwrap().eq("*") || query.genre.as_ref().unwrap().eq("")){
                         return HttpResponse::build(s).json(json!({"error": e.to_string()}))
                     },
                 _ => return HttpResponse::build(s).json(json!({"error": e.to_string()}))
             }
     };
     
+    let fields = query.search_fields.as_ref().map(|s| s.split(',').map(|x| x.trim().to_owned()).collect());
+
+    let term = if query.search_term.is_some() {
+        let mut z = query.search_term.as_ref().unwrap().replace(r" *", "* ");
+        z.push('*');
+        Some(z)
+    } else {
+        None
+    };
+
+    let response = db.search(&genre_index, 
+        &search_body(&term, &fields, &query.return_fields), 
+            query.from, 
+            query.count
+        ).await.unwrap()
+        .json::<Value>()
+        .await.unwrap();
+
+    HttpResponse::Ok().json(json!({
+        "took": &took.elapsed().as_millis(),
+        "data": &response["hits"]["hits"],
+        "total": &response["hits"]["total"]["value"],
+        "from": &query.from.unwrap_or(0),
+        "count": &query.count.unwrap_or(20)
+    }))
+}
+
+pub async fn search_books_get(path: web::Path<UserID>, query: web::Query<BookSearchQuery>, db: Data::<Database>) -> HttpResponse {
+
+    let took = std::time::Instant::now();
+
+    let mut to_search = query.genre.as_ref().unwrap_or(&"*".to_string()).to_lowercase();
+    to_search = if to_search.eq(""){
+        "*".to_string()
+    } else {
+        to_search
+    };
+    let genre_index = format!("{}.{}", &path.user_id.to_lowercase(), &to_search);
+
+    match check_userid_genre(&path.user_id, &to_search, &db).await{
+        Ok(_) => (),
+        Err((s, e)) => 
+            match e {
+                Errors::GenreNotFound(_) => 
+                    if query.genre.is_some() && !(query.genre.as_ref().unwrap().eq("*") || query.genre.as_ref().unwrap().eq("")){
+                        return HttpResponse::build(s).json(json!({"error": e.to_string()}))
+                    },
+                _ => return HttpResponse::build(s).json(json!({"error": e.to_string()}))
+            }
+    };
+
     let fields = query.search_fields.as_ref().map(|s| s.split(',').map(|x| x.trim().to_owned()).collect());
 
     let term = if query.search_term.is_some() {

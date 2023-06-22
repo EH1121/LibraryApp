@@ -57,7 +57,8 @@ async fn main() -> std::io::Result<()> {
                         
                 )
 
-                .route("/search/{user_id}", web::post().to(search_books))   
+                .route("/search/{user_id}", web::post().to(search_books))
+                .route("/search/{user_id}", web::get().to(search_books_get))   
         )
         })
     .bind(("127.0.0.1", 1234))?
