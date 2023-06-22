@@ -119,6 +119,74 @@
             }
         
 
+## GET /search/:user_id
+----
+    Search all genres, Can search a specific genre
+
+* **URL Params**
+
+    ***Required:*** 
+
+        user_id: String
+
+    ***Optional:***
+
+        genre: String
+        search_term: String, 
+        search_fields: Comma Separated Fields, 
+        return_fields: Comma Separated Fields, 
+        from: int, 
+        count: int
+
+* **Data Params**
+
+    None
+    
+* **Headers**
+
+    None
+
+* **Success Response**
+    * **Code:** 200
+
+        **Content:**
+        
+            {
+                "data" = 
+                    [
+                        {<data_object>},
+                        {<data_object>},
+                        {<data_object>}
+                    ],
+                "took": int,
+                "total": int,
+                "from": int,
+                "count": int
+            }
+        
+* **Error Response**
+    * **Code:** 404
+
+            {    
+                "error": "Cannot find user with ID: [user_id]"
+            }
+
+        OR
+
+        Content:
+        
+            {
+                "error": "Cannot find genre: [genre]"
+            }
+
+    * **Code:** 400
+
+        Content:
+        
+            {
+                "error": "Bad Data Given"
+            }
+            
 ## POST /book/:user_id/:genre
 ----
     Insert One or Multiple Books into a genre
