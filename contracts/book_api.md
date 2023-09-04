@@ -252,6 +252,83 @@
         }
         ```
 
+## POST /upload/:user_id/:genre
+----
+    Inserts data in JSON
+
+* **URL Params**
+
+    **Required:**
+
+    `user_id=[string]`
+
+    `genre=[string]`
+
+* **Data Params**
+
+    multipart form
+    ```
+    "File": JSON File
+    ```
+
+* **Headers**
+
+    None
+
+* **Success Response**
+    * **Code:** 200
+    
+        **Content:**
+        
+            [
+                {
+                    "doc_num": int,
+                    "error": String,
+                    "code": StatusCode
+                },
+                ... (List is empty if there are no errors)
+            ]
+        
+
+* **Error Response**
+    * **Code:** 404
+        
+        **Content:**
+
+        ```
+        {
+            "error": "Cannot find user with ID: [user_id]"
+        }
+        ```
+
+        OR
+        
+        ```
+        {
+            "error": "Cannot find genre: [genre]"
+        }
+        ```
+    
+    OR
+
+    * **Code:** 400
+
+        **Content:**
+
+        ```
+        {
+            "error": "Invalid JSON"
+        }
+        ```
+
+        OR
+
+        ```
+        {
+            "error": "Only JSON is Accepted"
+        }
+        ```
+
 ## PUT /book/:user_id/:genre/:book_id
 ----
     Update a single book

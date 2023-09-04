@@ -1,3 +1,4 @@
+use actix_multipart::form::{MultipartForm, tempfile::TempFile};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -21,6 +22,11 @@ pub struct UserID{
 pub struct UpdateUser{
     pub user_id: String,
     pub user_name: String
+}
+
+#[derive(MultipartForm)]
+pub struct GetFile{
+    pub file: TempFile
 }
 
 #[derive(Deserialize)]

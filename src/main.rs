@@ -12,8 +12,7 @@ mod user;
 mod structs;
 mod libs;
 
-/// Where should the main list be
-/// The constant must be in lowercase, without space, and lowercase alphanumeric
+/// Nama list utama untuk setor list usernya
 pub const USER_LIST: &str = "users_apps";
 
 #[actix_web::main]
@@ -24,7 +23,7 @@ async fn main() -> std::io::Result<()> {
 
     let db = Data::new(Database::new("http://127.0.0.1:9200"));
 
-    // Start server
+    // Hidupin servernya
     HttpServer::new( move || {
         App::new()
         .wrap(Cors::permissive())
@@ -32,6 +31,7 @@ async fn main() -> std::io::Result<()> {
             web::scope("")
                 .app_data(db.clone())
                 .service(
+                    // Route untuk user
                     web::scope("/user")
                         .route("", web::post().to(create_new_user))
                         .route("", web::put().to(update_user))   
@@ -39,8 +39,10 @@ async fn main() -> std::io::Result<()> {
                         .route("/{user_id}", web::delete().to(delete_user))
                 )
 
+                // Ambil list user
                 .route("/users", web::get().to(get_user_list))
                 
+                // Route untuk genre
                 .service(
                     web::scope("/genre/{user_id}")
                         .route("", web::post().to(create_genre))
@@ -48,17 +50,21 @@ async fn main() -> std::io::Result<()> {
                         .route("/{genre}", web::delete().to(delete_genre))
                 )
                 
+                // Route untuk ambil buku
                 .service(
                     web::scope("/book/{user_id}/{genre}")
                         .route("", web::post().to(create_books))
                         .route("/{book_id}", web::get().to(get_book))
                         .route("/{book_id}", web::put().to(update_book))
                         .route("/{book_id}", web::delete().to(delete_book))
-                        
                 )
 
+                // Cari
                 .route("/search/{user_id}", web::post().to(search_books))
                 .route("/search/{user_id}", web::get().to(search_books_get))   
+                
+                // Upload
+                .route("/upload/{user_id}/{genre}", web::post().to(upload_json))
         )
         })
     .bind(("127.0.0.1", 1234))?
